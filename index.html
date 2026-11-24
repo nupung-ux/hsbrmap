@@ -681,6 +681,7 @@ let dest=null,guide=null,pathPts=[],started=false;
 const dots=new THREE.InstancedMesh(new THREE.CircleGeometry(0.2,14),new THREE.MeshBasicMaterial({color:0xff2d78}),160);dots.count=0;dots.frustumCulled=false;scene.add(dots);
 const pin=new THREE.Mesh(new THREE.ConeGeometry(0.35,0.9,14),new THREE.MeshBasicMaterial({color:0xff2d78}));pin.rotation.x=Math.PI;pin.visible=false;scene.add(pin);
 /* 캐릭터(남학생, 여학생): 뒤에서 따라가며 보는 모드에서 보인다 */
+const CLOSED=[[40.25,3],[38,53.25],[6.75,55],[40.25,70.5],[85,68.5],[82.5,20]];
 let warnT=-9999,autoWalk=false,viewMode=0,speedMul=1.7,moving=false,phase=0,swing=0,camD=3;
 function mkHero(girl){const G=new THREE.Group(),M=c=>L({color:c}),skin=M(0xf3c9a5),top=M(girl?0xf06292:0x2f7fd6),bot=M(girl?0x7b4ba0:0x24365e),hair=M(0x2a211c),bag=M(girl?0xf2c230:0xe2452b);
   const bx=(w,h,d,m,x,y,z,p)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);(p||G).add(o);return o;};
@@ -835,7 +836,8 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(0.05,(now-las
     if((fw||st)&&autoWalk)setAuto(false);if(autoWalk&&guide&&dest)autoStep(sp);
     if(fw||st){const s=Math.sin(P.yaw),c=Math.cos(P.yaw);const l=Math.max(1,Math.hypot(fw,st));const dx=(-s*fw+c*st)/l*sp,dz=(-c*fw-s*st)/l*sp;
       const ox=P.x,oz=P.z;tryMove(P.x+dx,P.z);tryMove(P.x,P.z+dz);
-      if(P.f===0){const l2=Math.hypot(dx,dz)||1,tx=P.x+dx/l2*0.8,tz=P.z+dz/l2*0.8;if(tx>-6&&((tx<84.5&&tz<0&&tz>-22.5)||(tx<11&&tz>=0&&tz<51))&&cell(0,tx,tz)===0&&now-warnT>2500){warnT=now;toast('차가 다니는 주차장이라 이쪽으로 다니면 안 돼요');}}moving=(P.x!==ox||P.z!==oz);
+      if(P.f===0){const l2=Math.hypot(dx,dz)||1,tx=P.x+dx/l2*0.8,tz=P.z+dz/l2*0.8;if(tx>-6&&((tx<84.5&&tz<0&&tz>-22.5)||(tx<11&&tz>=0&&tz<51))&&cell(0,tx,tz)===0&&now-warnT>2500){warnT=now;toast('차가 다니는 주차장이라 이쪽으로 다니면 안 돼요');}
+        else if(now-warnT>2500&&!isWalk(cell(0,tx,tz))&&CLOSED.some(d=>Math.hypot(tx-d[0],tz-d[1])<1.7)){warnT=now;toast('주출입구로만 다닐 수 있어요');}}moving=(P.x!==ox||P.z!==oz);
       if(shaftAt(P.x,P.z)){const h=P.y/FH;let nf=P.f;if(h>P.f+0.52)nf=P.f+1;else if(h<P.f-0.52)nf=P.f-1;if(nf!==P.f){setFloor(nf);toast((nf+1)+'층으로 가는 계단이에요');}}}}
   updVis();
   autoDoors.forEach(d=>{const near=P.f===0&&Math.abs(P.x-d.c)<3.6&&P.z>d.t0-1.5&&P.z<d.t1+1.5;d.s+=((near?1:0)-d.s)*Math.min(1,dt*5);d.a.position.z=d.t0+d.w/2-d.s*(d.w-0.1);d.b.position.z=d.t1-d.w/2+d.s*(d.w-0.1);});
