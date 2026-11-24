@@ -154,7 +154,7 @@ const isWalk=v=>v===2||v===3||v===4||v===5,isWalkG=v=>v===2||v===3||v===5,isVoid
 /* 걸어서 오르내리는 계단실: 남쪽(z1)에서 들어가 오른쪽으로 올라가고 왼쪽으로 내려간다 */
 const SL=1.5;
 const SHAFTS=[{x0:46,z0:60,x1:51,z1:66.5,solid:[[45.5,55,51,60],[45.5,60,46,66.5]],solid0:[[45.5,58,51,60],[45.5,60,46,66.5]]},{x0:0,z0:58,x1:5,z1:66.5,solid:[[0,55,5,58]]},{x0:42.5,z0:2,x1:47.5,z1:10,solid:[]},{x0:80,z0:6,x1:85,z1:15.5,solid:[[80,0,85,6]]}];
-SHAFTS.forEach(S=>{S.zN=S.z1-SL;S.zF=S.z0+SL;S.xm=(S.x0+S.x1)/2;S.xr=S.xm+(S.x1-S.x0)/4;S.xl=S.xm-(S.x1-S.x0)/4;S.stub=[[S.x0,S.z1-0.5,S.x0+0.5,S.z1],[S.x1-0.5,S.z1-0.5,S.x1,S.z1]];
+SHAFTS.forEach(S=>{S.zN=S.z1-SL;S.zF=S.z0+SL;S.xm=(S.x0+S.x1)/2;S.xr=S.xm+(S.x1-S.x0)/4;S.xl=S.xm-(S.x1-S.x0)/4;S.front=S.z1>60;S.stub=[[S.x0,S.z1-0.5,S.x0+0.5,S.z1],[S.x1-0.5,S.z1-0.5,S.x1,S.z1]];
   S.bb=[S.x0,S.z0,S.x1,S.z1];S.solid.forEach(r=>{S.bb=[Math.min(S.bb[0],r[0]),Math.min(S.bb[1],r[1]),Math.max(S.bb[2],r[2]),Math.max(S.bb[3],r[3])];});});
 DATA.floors.forEach((F,f)=>{F.rooms=F.rooms.filter(o=>{const hit=SHAFTS.some(S=>o.r[0]<S.bb[2]&&o.r[2]>S.bb[0]&&o.r[1]<S.bb[3]&&o.r[3]>S.bb[1]);
   if(o.k==='stair'){if(hit)return false;o.k='util';o.n='계단실';return true;}
@@ -170,6 +170,7 @@ DATA.floors.forEach((F,f)=>{
     if(f===0&&o.n==='택배 보관실')o.dz=56.9;
     if(f===1&&(o.n==='전산실'||o.n==='스튜디오'))o.k='util';
     if(f===1&&o.n==='놀이체육실2')o.side=[1,0];
+    if(f===1&&o.n==='늘봄 지원실'){o.n='안전지킴이실';o.k='admin';F.rooms.push({r:[64.5,2,72,16.5],n:'늘봄지원실',k:'care'});}
     if(o.k==='wc'&&o.r[1]===55&&(o.r[0]===16.5||o.r[0]===21)){o.r=o.r[0]===16.5?[16.5,55,20.75,62.5]:[20.75,55,25,62.5];o.green=1;hit=true;}});
   if(hit)F.rooms.push({r:[18.5,62.5,20.75,66.5],n:'남학생 화장실',k:'wc',green:1,acc:1},{r:[20.75,62.5,23,66.5],n:'여학생 화장실',k:'wc',green:1,acc:1});
 });
@@ -705,7 +706,9 @@ function setView(v){viewMode=v;heroB.visible=v===1;heroG.visible=v===2;$('btnVie
 function setAuto(v){autoWalk=v;$('btnAutoT').textContent=v?'멈춤':'자동 걷기';}
 function floorCheck(){if(shaftAt(P.x,P.z)){const h=P.y/FH;let nf=P.f;if(h>P.f+0.52)nf=P.f+1;else if(h<P.f-0.52)nf=P.f-1;if(nf!==P.f)setFloor(nf);}}
 function autoStep(sp){const pts=computePath(),inS=shaftAt(P.x,P.z),la=inS?0.2:0.45;let t=null,far=null;
-  for(const p of pts){const d=Math.hypot(p[0]-P.x,p[1]-P.z);if(!t&&d>la)t=p;if(d>1.6){far=p;break;}}
+  /* 격자 길을 그대로 밟으면 지그재그로 흔들리므로, 막힘 없이 보이는 가장 먼 점으로 곧게 걷는다 */
+  if(!inS){for(let i=0;i<pts.length&&i<30;i++){const p=pts[i];if(Math.abs(p[2]-P.y)>0.3||shaftAt(p[0],p[1]))break;if(Math.hypot(p[0]-P.x,p[1]-P.z)<=la)continue;if(los(P.x,P.z,p[0],p[1]))t=p;else if(t)break;}far=t;}
+  if(!t){for(const p of pts){const d=Math.hypot(p[0]-P.x,p[1]-P.z);if(!t&&d>la)t=p;if(d>1.6){far=p;break;}}}
   if(!t)t=pts[pts.length-1];if(!t)return;if(!far||inS)far=t;
   const dx=t[0]-P.x,dz=t[1]-P.z,l=Math.hypot(dx,dz);if(l<0.03)return;const st=Math.min(sp,l);
   const go=(nx,nz)=>{if(!isWalk(cell(P.f,nx,nz)))return false;const ny=surfY(nx,nz,P.f,P.y);if(ny===null||Math.abs(ny-P.y)>0.5)return false;P.x=nx;P.z=nz;P.y=ny;moving=true;return true;};
@@ -726,13 +729,15 @@ function shaftRoute(S,h0,h1){const out=[],n=Math.ceil(Math.abs(h1-h0)/0.05),st=(
   for(let i=1;i<=n;i++){const h=h0+st*i,k=Math.min(NF-2,Math.floor(h+1e-6)),fr=h-k;
     if(fr<=0.5){const t=fr/0.5;out.push([S.xr,S.zN-t*(S.zN-S.zF),h*FH+0.16]);}else{const t=1-(fr-0.5)/0.5;out.push([S.xl,S.zN-t*(S.zN-S.zF),h*FH+0.16]);}}
   return out;}
+const FSH=SHAFTS.filter(S=>S.front);
+function los(x0,z0,x1,z1){const l=Math.hypot(x1-x0,z1-z0),n=Math.ceil(l/0.2);for(let i=1;i<=n;i++){const x=x0+(x1-x0)*i/n,z=z0+(z1-z0)*i/n;if(!canStand(P.f,x,z)||shaftAt(x,z))return false;}return true;}
 function computePath(){if(!guide||!dest)return[];const S=shaftAt(P.x,P.z);
   const lift=(arr,f)=>arr.map(p=>[p[0],p[1],groundH(p[0],p[1],f)]);
   if(S){const h=P.y/FH,up=dest.f>h;return shaftRoute(S,h,dest.f).concat(lift(tracePath(guide.Dd,up?S.xl:S.xr,S.zN+0.6),dest.f));}
   if(P.f===dest.f)return lift(tracePath(guide.Dd,P.x,P.z),P.f);
-  const up=dest.f>P.f;let D=guide.Dc[P.f];if(!D)D=guide.Dc[P.f]=distField(P.f,SHAFTS.map(S=>[up?S.xr:S.xl,S.zN+0.6]));
-  const a=tracePath(D,P.x,P.z),e=a.length?a[a.length-1]:[P.x,P.z];let S2=SHAFTS[0],bd=1e9;
-  SHAFTS.forEach(S=>{const d=Math.hypot((up?S.xr:S.xl)-e[0],S.zN+0.6-e[1]);if(d<bd){bd=d;S2=S;}});
+  const up=dest.f>P.f;let D=guide.Dc[P.f];if(!D)D=guide.Dc[P.f]=distField(P.f,FSH.map(S=>[up?S.xr:S.xl,S.zN+0.6]));
+  const a=tracePath(D,P.x,P.z),e=a.length?a[a.length-1]:[P.x,P.z];let S2=FSH[0],bd=1e9;
+  FSH.forEach(S=>{const d=Math.hypot((up?S.xr:S.xl)-e[0],S.zN+0.6-e[1]);if(d<bd){bd=d;S2=S;}});
   if(Math.hypot((up?S2.xr:S2.xl)-P.x,S2.zN-P.z)<1.1)a.length=0;
   return lift(a,P.f).concat(shaftRoute(S2,P.f,dest.f),lift(tracePath(guide.Dd,up?S2.xl:S2.xr,S2.zN+0.6),dest.f));}
 function updateGuideUI(){const el=$('guide');if(!dest||!guide){el.hidden=true;dots.count=0;pin.visible=false;return;}
@@ -860,7 +865,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(0.05,(now-las
     $('stairBox').hidden=!st;if(st){$('btnUp').disabled=P.f>=NF-1;$('btnDown').disabled=P.f<=0;$('stairName').textContent=near.room.k==='elev'?'엘리베이터':'계단';}
     const nb=$('near');if(near&&!st){nb.hidden=false;nb.textContent='여기는 '+near.room.n;nb.style.borderColor=KC[near.room.k]||'#e3d6b0';}else nb.hidden=true;
     if(guide){
-      if(P.f===dest.f&&!shaftAt(P.x,P.z)&&Math.hypot(P.x-dest.door.x,P.z-dest.door.z)<2.3){const n=dest.n,d0=dest.door;if(autoWalk)P.yaw=Math.atan2(d0.nx,d0.nz);stopGuide();toast(n+'에 도착했어요!');pathPts=[];}
+      if(P.f===dest.f&&!shaftAt(P.x,P.z)&&Math.hypot(P.x-dest.door.x,P.z-dest.door.z)<1.2){const n=dest.n,d0=dest.door;if(autoWalk)P.yaw=Math.atan2(d0.nx,d0.nz);stopGuide();toast(n+'에 도착했어요!');pathPts=[];}
       else{pathPts=computePath();let n=0,acc=0.9,px=P.x,pz=P.z,py=P.y;for(let i=0;i<pathPts.length&&n<160;i++){const p=pathPts[i];acc+=Math.hypot(p[0]-px,p[1]-pz,p[2]-py);px=p[0];pz=p[1];py=p[2];if(acc<1.3)continue;acc=0;tmpM.compose(new THREE.Vector3(p[0],p[2]+0.08,p[1]),tmpQ,one);dots.setMatrixAt(n++,tmpM);}
         dots.count=n;dots.instanceMatrix.needsUpdate=true;
         pin.visible=true;pin.position.set(dest.door.x-dest.door.nx*0.6,dest.f*FH+3.0,dest.door.z-dest.door.nz*0.6);}}
