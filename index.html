@@ -180,7 +180,7 @@ const PLANTERS=[[58,34,67,38],[72,43,81,47],[58,48,64,51],[96,33,103,37]];
 const BEDS=[[69.5,131,74.5,133],[69.5,134.5,74.5,136.5]];const GX=68;
 const TABLES=[];[30,34.5,39,43.5,47.5].forEach(z=>{TABLES.push([53,z],[55.3,z]);});
 const YCOL=[29,36.5,44,51];
-const SITE_BLOCK=TABLES.map(t=>[t[0]-1,t[1]-1,t[0]+1,t[1]+1]).concat(YCOL.map(z=>[56.5,z-0.5,57.5,z+0.5]),[[51,58.3,59.5,67],[-6,-22.5,84.5,0]]).concat([[83.25,25.25,84.5,26.5],[92,2,108,30],[-6,-22.5,70,-22],[82,-22.5,85.5,-22],[91.5,-22.5,112,-22],[GX,86,GX+0.5,138],[94,60,101,74],[91,85.5,92,86.5]]).concat(CARS,PLANTERS,BEDS);
+const SITE_BLOCK=TABLES.map(t=>[t[0]-1,t[1]-1,t[0]+1,t[1]+1]).concat(YCOL.map(z=>[56.5,z-0.5,57.5,z+0.5]),[[51,58.3,59.5,67],[-6,-22.5,84.5,0],[-6,0,11,51]]).concat([[83.25,25.25,84.5,26.5],[92,2,108,30],[-6,-22.5,70,-22],[82,-22.5,85.5,-22],[91.5,-22.5,112,-22],[GX,86,GX+0.5,138],[94,60,101,74],[91,85.5,92,86.5]]).concat(CARS,PLANTERS,BEDS);
 function groundH(x,z,f){if(f>0)return f*FH;if(x<=112)return 0;if(x>=120)return LOW;return LOW*(x-112)/8;}
 
 /* ===== 격자 만들기 ===== */
@@ -517,7 +517,8 @@ function buildSite(){
   hquad(flatB,-60,-34,112,160,-0.03,true,0,C('#b7b48f'));
   hquad(flatB,-60,-60,150,-25,-0.02,true,0,C('#5c6068'));            // 북쪽 도로
   hquad(flatB,-6,-25,112,-22,-0.01,true,0,C('#cdb8ad'));              // 보도
-  hquad(flatB,10,-22,84.5,0,-0.01,true,0,C('#4f5359'));               // 주차장
+  hquad(flatB,-5.8,-22,84.5,0,-0.01,true,0,C('#4f5359'));hquad(flatB,-5.8,0,11,51,-0.01,true,0,C('#4f5359'));
+  for(let i=0;i<9;i++)hquad(flatB,-5.6,6+i*5-0.06,-0.6,6+i*5+0.06,0,true,0,C('#ffffff'));               // 주차장
   hquad(paveB,84.5,-22,92.5,82,0,true,4);                              // 정문 길
   hquad(paveB,42.5,27,112,55,0,true,4);                                // 안뜰
   hquad(paveB,85,55,93,90,0,true,4);                                  // 주출입구 남쪽, 놀이터 가는 길
@@ -744,7 +745,7 @@ function drawMaps(){for(let f=0;f<NF;f++){const c=document.createElement('canvas
   const R=(r,col)=>{g.fillStyle=col;g.fillRect(X(r[0]),Z(r[1]),(r[2]-r[0])*MS,(r[3]-r[1])*MS);};
   const T=(t,x,z,s,col)=>{g.fillStyle=col||'#4b5563';g.font='700 '+(s||13)+'px '+FONT;g.textAlign='center';g.textBaseline='middle';g.fillText(t,X(x),Z(z));};
   g.fillStyle=f===0?'#dfe8d4':'#eef1f4';g.fillRect(0,0,c.width,c.height);
-  if(f===0){R([-14,-34,136,-25],'#aeb4bc');R([112.6,-34,136,141],'#aeb4bc');R([119.5,-34,128,141],'#d9b3a5');R([10,-22,84.5,0],'#c3c7cd');R([84.5,-22,92.5,82],'#ecd3c6');R([42.5,27,112,55],'#ecd3c6');R([-5,80,GX,137],'#ecdcb6');R([GX+0.5,82,111.5,137],'#e6dcc0');R([90,90,106,100],'#efe2b8');BEDS.forEach(b=>R(b,'#b9d39a'));R([94,60,101,74],'#c5d6a8');R([92,2,108,30],'#e3b08f');
+  if(f===0){R([-14,-34,136,-25],'#aeb4bc');R([112.6,-34,136,141],'#aeb4bc');R([119.5,-34,128,141],'#d9b3a5');R([-5,-22,84.5,0],'#c3c7cd');R([-5,0,11,51],'#c3c7cd');R([84.5,-22,92.5,82],'#ecd3c6');R([42.5,27,112,55],'#ecd3c6');R([-5,80,GX,137],'#ecdcb6');R([GX+0.5,82,111.5,137],'#e6dcc0');R([90,90,106,100],'#efe2b8');BEDS.forEach(b=>R(b,'#b9d39a'));R([94,60,101,74],'#c5d6a8');R([92,2,108,30],'#e3b08f');
     for(let s=0;s<8;s++)R([112+s,46,112.5+s,50],'#8e9197');
     R([51,27,57.5,52],'#f1dfa0');R([51,58.3,59.5,66.5],'#b9d39a');R([128,47.2,135,52.8],'#e9c33a');T('스쿨버스 승하차장',123.5,56,11,'#8a5a00');T('주차장',45,-11,15);T('안뜰',80,41,16);T('운동장',31,108,20);g.fillStyle='#f4f4f0';for(let z=-25.4;z>-30.6;z-=1)g.fillRect(X(86.3),Z(z-0.5),4.4*MS,0.5*MS);T('주출입구',57.5,53.3,13,'#b3261e');T('병설유치원',100,16,11,'#5b3a25');T('정문',88.5,-27,15,'#b3261e');T('후문',124,43,15,'#b3261e');}
   const gr=grids[f];g.fillStyle='#fffdf6';for(let j=0;j<NZ;j++)for(let i=0;i<NX;i++){if(isIn(gr[j*NX+i]))g.fillRect(i*CS*MS,j*CS*MS,CS*MS+0.5,CS*MS+0.5);}
@@ -834,7 +835,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(0.05,(now-las
     if((fw||st)&&autoWalk)setAuto(false);if(autoWalk&&guide&&dest)autoStep(sp);
     if(fw||st){const s=Math.sin(P.yaw),c=Math.cos(P.yaw);const l=Math.max(1,Math.hypot(fw,st));const dx=(-s*fw+c*st)/l*sp,dz=(-c*fw-s*st)/l*sp;
       const ox=P.x,oz=P.z;tryMove(P.x+dx,P.z);tryMove(P.x,P.z+dz);
-      if(P.f===0){const l2=Math.hypot(dx,dz)||1,tx=P.x+dx/l2*0.8,tz=P.z+dz/l2*0.8;if(tx<84.5&&tx>-6&&tz<0&&tz>-22.5&&now-warnT>2500){warnT=now;toast('차가 다니는 주차장이라 이쪽으로 다니면 안 돼요');}}moving=(P.x!==ox||P.z!==oz);
+      if(P.f===0){const l2=Math.hypot(dx,dz)||1,tx=P.x+dx/l2*0.8,tz=P.z+dz/l2*0.8;if(tx>-6&&((tx<84.5&&tz<0&&tz>-22.5)||(tx<11&&tz>=0&&tz<51))&&cell(0,tx,tz)===0&&now-warnT>2500){warnT=now;toast('차가 다니는 주차장이라 이쪽으로 다니면 안 돼요');}}moving=(P.x!==ox||P.z!==oz);
       if(shaftAt(P.x,P.z)){const h=P.y/FH;let nf=P.f;if(h>P.f+0.52)nf=P.f+1;else if(h<P.f-0.52)nf=P.f-1;if(nf!==P.f){setFloor(nf);toast((nf+1)+'층으로 가는 계단이에요');}}}}
   updVis();
   autoDoors.forEach(d=>{const near=P.f===0&&Math.abs(P.x-d.c)<3.6&&P.z>d.t0-1.5&&P.z<d.t1+1.5;d.s+=((near?1:0)-d.s)*Math.min(1,dt*5);d.a.position.z=d.t0+d.w/2-d.s*(d.w-0.1);d.b.position.z=d.t1-d.w/2+d.s*(d.w-0.1);});
