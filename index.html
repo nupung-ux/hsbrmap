@@ -102,7 +102,7 @@ button:disabled{opacity:.4;cursor:default}
   <div id="where"><small>지금 있는 곳</small><b><span id="floorNow">1층</span><span id="place">정문</span></b></div>
   <div id="menu"><button type="button" id="btnFind" class="primary">교실 찾기</button><button type="button" id="btnMap">전체 지도</button><button type="button" id="btnHome">처음으로</button><button type="button" id="btnMenu">메뉴</button></div>
   <div id="opts"><button type="button" id="btnView">보기: 내 눈</button>
-  <div class="seg box" id="speedSeg"><span>걷는 속도</span><button type="button" data-sp="1">느리게</button><button type="button" data-sp="1.7" aria-pressed="true">보통</button><button type="button" data-sp="2.6">빠르게</button></div></div>
+  <div class="seg box" id="speedSeg"><span>걷는 속도</span><button type="button" data-sp="0.55">느리게</button><button type="button" data-sp="1" aria-pressed="true">보통</button><button type="button" data-sp="1.7">빠르게</button><button type="button" data-sp="2.6">매우 빠르게</button></div></div>
 </div>
 <div id="right">
   <canvas id="mini" width="336" height="336" title="눌러서 전체 지도 보기"></canvas>
@@ -197,7 +197,9 @@ DATA.floors.forEach((F,f)=>{
   if(f===0){const kill=[];for(let j=1;j<NZ-1;j++)for(let i=1;i<NX-1;i++){const k=j*NX+i;if(g[k]!==5)continue;const n=[g[k-1],g[k+1],g[k-NX],g[k+NX]];if((n.includes(2)||n.includes(4))&&!n.includes(3))kill.push(k);}kill.forEach(k=>g[k]=0);}
   grids.push(g);
 });
-function cell(f,x,z){const i=gi(x),j=gj(z);if(i<0||j<0||i>=NX||j>=NZ)return 0;return grids[f][j*NX+i];}
+/* 주출입구는 네 짝 중 한 짝(z 53~55)만 열린다: 나머지 짝 자리는 지나갈 수 없다 */
+const BLK=new Uint8Array(NX*NZ);[[51,51.5,51.5,53],[51,55,51.5,58],[45.5,51.5,46,53],[45.5,55,46,58]].forEach(r=>fillR(BLK,r,1));
+function cell(f,x,z){const i=gi(x),j=gj(z);if(i<0||j<0||i>=NX||j>=NZ)return 0;if(f===0&&BLK[j*NX+i])return 0;return grids[f][j*NX+i];}
 function canStand(f,x,z){const r=0.28;return isWalk(cell(f,x-r,z-r))&&isWalk(cell(f,x+r,z-r))&&isWalk(cell(f,x-r,z+r))&&isWalk(cell(f,x+r,z+r));}
 function nearestWalk(f,x,z,indoor){for(let rad=0;rad<80;rad++){for(let dj=-rad;dj<=rad;dj++)for(let di=-rad;di<=rad;di++){if(Math.max(Math.abs(di),Math.abs(dj))!==rad)continue;const px=x+di*CS,pz=z+dj*CS;const v=cell(f,px,pz);if((indoor?(v===2||v===3):isWalkG(v))&&canStand(f,px,pz))return[px,pz];}}return[x,z];}
 function shaftAt(x,z){for(const S of SHAFTS)if(x>=S.x0&&x<S.x1&&z>=S.z0&&z<S.zN)return S;return null;}
@@ -500,9 +502,9 @@ function buildShafts(){const N=12,c1='#fbf8ee',c2='#eeeade',RL=rgb('#cfc6ad'),HR
   });}
 /* 주출입구 자동문: 닫혀 있다가 가까이 가면 열린다 */
 const autoDoors=[];
-function addAutoDoor(c,t0,t1){const w=(t1-t0)/2,mat=new THREE.MeshBasicMaterial({map:TEX.gleaf});
+function addAutoDoor(c,t0,t1,m){const w=(t1-t0)/2,mat=new THREE.MeshBasicMaterial({map:TEX.gleaf});
   const mkL=z=>{const m=new THREE.Group();[1,-1].forEach(s=>{const q=new THREE.Mesh(new THREE.PlaneGeometry(w,2.7),mat);q.rotation.y=s*Math.PI/2;q.position.x=s*0.012;m.add(q);});m.position.set(c+0.025,1.35,z);always.add(m);return m;};
-  autoDoors.push({c,t0,t1,w,a:mkL(t0+w/2),b:mkL(t1-w/2),s:0});}
+  const d={c,t0,t1,w,m:m||0,a:mkL(t0+w/2),b:mkL(t1-w/2),s:0};if(m===1)d.b.position.x-=0.05;autoDoors.push(d);}
 
 /* ===== 바깥 풍경 ===== */
 function textMesh(text,w,h,o){o=o||{};const pw=o.vertical?128:1024,ph=Math.round(pw*h/w);
@@ -634,7 +636,7 @@ function buildSite(){
   box(flatB,51.05,FH-0.05,52,53.5,FH+0.2,58.3,'#d9dde2');
   hquad(flatB,51.2,52.5,54.6,52.9,0.02,true,0,C('#e2b23a'));hquad(flatB,52.0,53.5,54.4,54.8,0.02,true,0,C('#5a5f66'));hquad(flatB,52.25,53.75,54.15,54.55,0.025,true,0,C('#c0392b'));hquad(flatB,52.5,53.95,53.9,54.35,0.03,true,0,C('#5a5f66'));
   hquad(paveB,51,55,62,58.6,0.001,true,4);
-  addAutoDoor(51,51.5,54.75);addAutoDoor(51,54.75,58);addAutoDoor(45.5,51.5,54.75);addAutoDoor(45.5,54.75,58);
+  addAutoDoor(51,51.5,54.75,1);addAutoDoor(51,54.75,58,2);addAutoDoor(45.5,51.5,54.75,1);addAutoDoor(45.5,54.75,58,2);
   /* 정문 앞 횡단보도와 건너편 보도 */
   for(let z=-25.4;z>-30.6;z-=1)hquad(flatB,86.3,z-0.5,90.7,z,-0.012,true,0,C('#f4f4f0'));
   hquad(flatB,-60,-34,150,-31,-0.011,true,0,C('#cdb8ad'));
@@ -667,7 +669,7 @@ function distField(f,srcs){const nw=nearW(f),g=grids[f],D=new Uint16Array(NX*NZ)
   const pop=()=>{const k=hk[0],d=hd[0],lk=hk.pop(),ld=hd.pop(),n=hk.length;if(n){let i=0;for(;;){let c=2*i+1;if(c>=n)break;if(c+1<n&&hd[c+1]<hd[c])c++;if(hd[c]>=ld)break;hk[i]=hk[c];hd[i]=hd[c];i=c;}hk[i]=lk;hd[i]=ld;}return[k,d];};
   srcs.forEach(s=>{const p=nearestWalk(f,s[0],s[1]);const k=gj(p[1])*NX+gi(p[0]);if(D[k]===65535){D[k]=0;push(k,0);}});
   while(hk.length){const e=pop(),k=e[0];if(e[1]>D[k])continue;const i=k%NX,j=(k-i)/NX;
-    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const ni=i+di,nj=j+dj;if(ni<0||nj<0||ni>=NX||nj>=NZ)continue;const nk=nj*NX+ni;if(!isWalkG(g[nk]))continue;
+    for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const ni=i+di,nj=j+dj;if(ni<0||nj<0||ni>=NX||nj>=NZ)continue;const nk=nj*NX+ni;if(!isWalkG(g[nk])||(f===0&&BLK[nk]))continue;
       if(di&&dj&&(!isWalkG(g[j*NX+ni])||!isWalkG(g[nj*NX+i])))continue;const nd=e[1]+((di&&dj)?7:5)+(nw[nk]?9:0);if(nd<D[nk]){D[nk]=nd;push(nk,nd);}}}
   return D;}
 function tracePath(D,x,z){let i=gi(x),j=gj(z),k=j*NX+i;const out=[];if(i<0||j<0||i>=NX||j>=NZ||D[k]===65535)return out;let guard=0;
@@ -682,7 +684,7 @@ const dots=new THREE.InstancedMesh(new THREE.CircleGeometry(0.2,14),new THREE.Me
 const pin=new THREE.Mesh(new THREE.ConeGeometry(0.35,0.9,14),new THREE.MeshBasicMaterial({color:0xff2d78}));pin.rotation.x=Math.PI;pin.visible=false;scene.add(pin);
 /* 캐릭터(남학생, 여학생): 뒤에서 따라가며 보는 모드에서 보인다 */
 const CLOSED=[[40.25,3],[38,53.25],[6.75,55],[40.25,70.5],[85,68.5],[82.5,20]];
-let warnT=-9999,autoWalk=false,viewMode=0,speedMul=1.7,moving=false,phase=0,swing=0,camD=3;
+let warnT=-9999,autoWalk=false,viewMode=0,speedMul=1,moving=false,phase=0,swing=0,camD=3;
 function mkHero(girl){const G=new THREE.Group(),M=c=>L({color:c}),skin=M(0xf3c9a5),top=M(girl?0xf06292:0x2f7fd6),bot=M(girl?0x7b4ba0:0x24365e),hair=M(0x2a211c),bag=M(girl?0xf2c230:0xe2452b);
   const bx=(w,h,d,m,x,y,z,p)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);(p||G).add(o);return o;};
   const limb=(x,y,len,m,w)=>{const pv=new THREE.Group();pv.position.set(x,y,0);G.add(pv);bx(w,len,w,m,0,-len/2,0,pv);return pv;};
@@ -837,10 +839,11 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(0.05,(now-las
     if(fw||st){const s=Math.sin(P.yaw),c=Math.cos(P.yaw);const l=Math.max(1,Math.hypot(fw,st));const dx=(-s*fw+c*st)/l*sp,dz=(-c*fw-s*st)/l*sp;
       const ox=P.x,oz=P.z;tryMove(P.x+dx,P.z);tryMove(P.x,P.z+dz);
       if(P.f===0){const l2=Math.hypot(dx,dz)||1,tx=P.x+dx/l2*0.8,tz=P.z+dz/l2*0.8;if(tx>-6&&((tx<84.5&&tz<0&&tz>-22.5)||(tx<11&&tz>=0&&tz<51))&&cell(0,tx,tz)===0&&now-warnT>2500){warnT=now;toast('차가 다니는 주차장이라 이쪽으로 다니면 안 돼요');}
+        else if(now-warnT>2500&&BLK[gj(tz)*NX+gi(tx)]){warnT=now;toast('열리는 문은 오른쪽 문 하나예요');}
         else if(now-warnT>2500&&!isWalk(cell(0,tx,tz))&&CLOSED.some(d=>Math.hypot(tx-d[0],tz-d[1])<1.7)){warnT=now;toast('주출입구로만 다닐 수 있어요');}}moving=(P.x!==ox||P.z!==oz);
       if(shaftAt(P.x,P.z)){const h=P.y/FH;let nf=P.f;if(h>P.f+0.52)nf=P.f+1;else if(h<P.f-0.52)nf=P.f-1;if(nf!==P.f){setFloor(nf);toast((nf+1)+'층으로 가는 계단이에요');}}}}
   updVis();
-  autoDoors.forEach(d=>{const near=P.f===0&&Math.abs(P.x-d.c)<3.6&&P.z>d.t0-1.5&&P.z<d.t1+1.5;d.s+=((near?1:0)-d.s)*Math.min(1,dt*5);d.a.position.z=d.t0+d.w/2-d.s*(d.w-0.1);d.b.position.z=d.t1-d.w/2+d.s*(d.w-0.1);});
+  autoDoors.forEach(d=>{const near=d.m!==2&&P.f===0&&Math.abs(P.x-d.c)<3.2&&P.z>d.t0-0.5&&P.z<d.t1+2;d.s+=((near?1:0)-d.s)*Math.min(1,dt*5);d.a.position.z=d.t0+d.w/2-(d.m?0:d.s)*(d.w-0.1);d.b.position.z=d.t1-d.w/2+(d.m===2?0:d.s)*(d.w-0.1);});
   if(viewMode>0){const s=Math.sin(P.yaw),c=Math.cos(P.yaw);let d=0.3;
     for(let t=0.3;t<=3.31;t+=0.25){if(!isWalk(cell(P.f,P.x+s*(t+0.25),P.z+c*(t+0.25))))break;d=t;}
     camD+=(d-camD)*Math.min(1,dt*8);
