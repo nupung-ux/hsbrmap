@@ -153,7 +153,7 @@ const gi=x=>Math.floor((x-GX0)/CS),gj=z=>Math.floor((z-GZ0)/CS);
 const isWalk=v=>v===2||v===3||v===4||v===5,isWalkG=v=>v===2||v===3||v===5,isVoid=v=>v===0||v===5,isIn=v=>v===2||v===3||v===4;
 /* 걸어서 오르내리는 계단실: 남쪽(z1)에서 들어가 오른쪽으로 올라가고 왼쪽으로 내려간다 */
 const SL=1.5;
-const SHAFTS=[{x0:46,z0:60,x1:51,z1:66.5,solid:[[45.5,55,51,60],[45.5,60,46,66.5]],solid0:[[45.5,58,51,60],[45.5,60,46,66.5]]},{x0:0,z0:58,x1:5,z1:66.5,solid:[[0,55,5,58]]},{x0:42.5,z0:2,x1:47.5,z1:10,solid:[]},{x0:80,z0:6,x1:85,z1:15.5,solid:[[80,0,85,6]]}];
+const SHAFTS=[{x0:46,z0:60,x1:51,z1:66.5,solid:[[45.5,55,51,60],[45.5,60,46,66.5]],solid0:[[45.5,58,51,60],[45.5,60,46,66.5]]},{x0:0,z0:58,x1:5,z1:66.5,solid:[[0,55,5,58]]},{x0:42.5,z0:7.5,x1:47.5,z1:15.5,solid:[[42.5,2,47.5,7.5]]},{x0:80,z0:6,x1:85,z1:15.5,solid:[[80,0,85,6]]}];
 SHAFTS.forEach(S=>{S.zN=S.z1-SL;S.zF=S.z0+SL;S.xm=(S.x0+S.x1)/2;S.xr=S.xm+(S.x1-S.x0)/4;S.xl=S.xm-(S.x1-S.x0)/4;S.front=S.z1>60;S.stub=[[S.x0,S.z1-0.5,S.x0+0.5,S.z1],[S.x1-0.5,S.z1-0.5,S.x1,S.z1]];
   S.bb=[S.x0,S.z0,S.x1,S.z1];S.solid.forEach(r=>{S.bb=[Math.min(S.bb[0],r[0]),Math.min(S.bb[1],r[1]),Math.max(S.bb[2],r[2]),Math.max(S.bb[3],r[3])];});});
 DATA.floors.forEach((F,f)=>{F.rooms=F.rooms.filter(o=>{const hit=SHAFTS.some(S=>o.r[0]<S.bb[2]&&o.r[2]>S.bb[0]&&o.r[1]<S.bb[3]&&o.r[3]>S.bb[1]);
@@ -173,6 +173,18 @@ DATA.floors.forEach((F,f)=>{
     if(f===1&&o.n==='늘봄 지원실'){o.n='안전지킴이실';o.k='admin';F.rooms.push({r:[64.5,2,72,16.5],n:'늘봄지원실',k:'care'});}
     if(o.k==='wc'&&o.r[1]===55&&(o.r[0]===16.5||o.r[0]===21)){o.r=o.r[0]===16.5?[16.5,55,20.75,62.5]:[20.75,55,25,62.5];o.green=1;hit=true;}});
   if(hit)F.rooms.push({r:[18.5,62.5,20.75,66.5],n:'남학생 화장실',k:'wc',green:1,acc:1},{r:[20.75,62.5,23,66.5],n:'여학생 화장실',k:'wc',green:1,acc:1});
+});
+/* 후관 복도는 북쪽 벽이 한 줄로 쭉 이어진다. 계단은 복도에서 바로 들어가고 화장실만 살짝 들어가 있다. 2층 모서리는 벽돌 쉼터로 터 있다 */
+DATA.floors.forEach((F,f)=>{
+  F.cor=F.cor.filter(r=>!(r[0]===42.5&&r[1]===10));let a=99,b=0;
+  F.rooms.forEach(o=>{const r=o.r;
+    if(o.k==='wc'&&r[1]<=3&&r[0]>=47.5&&r[2]<=55){r[3]=14.5;a=Math.min(a,r[0]);b=Math.max(b,r[2]);}
+    else if(o.k!=='door'&&r[0]>=42.5&&r[1]<15.5&&r[3]>15.5&&r[3]<=16.5)r[3]=15.5;
+    if(/탈의샤워실/.test(o.n)){o.k='util';r[3]=Math.min(r[3],15.5);}
+    if(r[0]===54.5&&r[1]===2)o.side=[0,1];
+    if(f===1&&o.n==='시청각실')o.dz=36.9;});
+  if(b)F.cor.push([a,14.5,b,15.5]);
+  if(f===1)F.rooms.push({r:[42.5,20,51,27],n:'쉼터',k:'open'});
 });
 /* ===== 바깥 지형 ===== */
 const SITE_WALK=[[86.3,-31,90.7,-24],[60,-33.5,112,-31],[-6,-24,112,138],[112,46,120,50],[120,14,128,96]];
@@ -314,6 +326,10 @@ Object.assign(TEX,{
     g.fillStyle='#3f4c66';g.fillRect(0,h-12,w,12);},true),
   num:ctex(1024,256,(g)=>{g.clearRect(0,0,1024,256);const cs=['#e6cb72','#a6cd5f','#8cc5d8','#e7a39c','#b5a3d8'];g.textAlign='center';g.textBaseline='middle';g.font='800 250px sans-serif';for(let i=0;i<5;i++){g.fillStyle=cs[i];g.fillText(String(i+1),i*128+64,138);}})
 });
+Object.assign(TEX,{
+  brick:ctex(256,256,(g,w,h)=>{g.fillStyle='#f1ebe2';g.fillRect(0,0,w,h);const R=rnd(9);for(let r=0;r<16;r++)for(let c=-1;c<4;c++){const t=R();g.fillStyle=t<0.3?'#b5472f':t<0.7?'#c0523a':'#a9412b';g.fillRect(c*64+(r%2)*32+2,r*16+2,60,12);}},true),
+  aud:ctex(4096,512,(g,w,h)=>{g.fillStyle='#a9d9b4';g.fillRect(0,0,w,h);g.fillStyle='#f3e7b8';g.font='800 520px sans-serif';g.textBaseline='middle';g.textAlign='center';'AUDITORIUM'.split('').forEach((ch,i)=>g.fillText(ch,(i+0.5)*w/10,h*0.52));g.fillStyle='#3f4c66';g.fillRect(0,h-16,w,16);})
+});
 const L=o=>new THREE.MeshLambertMaterial(o);
 const MAT={
   flat:L({vertexColors:true}),
@@ -324,7 +340,7 @@ const MAT={
   stone:L({map:TEX.stone,vertexColors:true}),
   net:L({map:TEX.net,transparent:true,alphaTest:0.3,side:THREE.DoubleSide}),
   num:new THREE.MeshBasicMaterial({map:TEX.num,transparent:true}),
-  lib:new THREE.MeshBasicMaterial({map:TEX.lib}),
+  lib:new THREE.MeshBasicMaterial({map:TEX.lib}),brick:new THREE.MeshBasicMaterial({map:TEX.brick}),aud:new THREE.MeshBasicMaterial({map:TEX.aud}),
   fence:L({map:TEX.fence,transparent:true,alphaTest:0.4,side:THREE.DoubleSide})
 };
 const FT={grey:17,red:17,base:17,plain:17,glass:4.5};
@@ -438,6 +454,18 @@ function buildFloor(f){
     o.f=f;if(LISTED.includes(o.k))roomsFlat.push(o);
   });
   if(f===1&&('시청각실|big' in slotOf)){const sl=slotOf['시청각실|big'],uv=[(sl%8)/8,1-(Math.floor(sl/8)+1)*SR,(sl%8+1)/8,1-Math.floor(sl/8)*SR];[1,-1].forEach(s=>plate(signB,38.78,38.9,0,s,1.4,y0+2.25,y0+2.775,0.01,uv));}
+  const brB=new Batch(),audB=new Batch();
+  if(f===1){const yc=y1-0.25;
+    /* 시청각실 앞: 연두색 벽에 큰 글자, 두 짝 문 옆에 한 짝 문 */
+    plate(audB,33.25,38.5,0,-1,9.5,y0,yc,0.015,[0,0,0.404,1]);plate(audB,28.5,36.25,1,0,4.5,y0,yc,0.015,[0.404,0,0.596,1]);plate(audB,33.25,34,0,1,9.5,y0,yc,0.015,[0.596,0,1,1]);
+    plate(doorB,28.5,34.9,1,0,1.0,y0,y0+2.4,0.03,[7/16+8/4096,0,7/16+130/4096,1]);
+    /* 모서리 쉼터: 벽돌 벽, 빨간 긴 의자, 검은 격자 천장 */
+    vwall(brB,50.97,20,50.97,27,-1,0,y0,yc,2);vwall(brB,42.5,26.97,51,26.97,0,-1,y0,yc,2);
+    box(flatB,50.4,y0,20.3,50.96,y0+0.4,26.4,'#d8b989');box(flatB,50.4,y0+0.4,20.3,50.96,y0+0.5,26.4,'#c8323a');
+    box(flatB,43,y0,26.4,50.96,y0+0.4,26.96,'#d8b989');box(flatB,43,y0+0.4,26.4,50.96,y0+0.5,26.96,'#c8323a');
+    hquad(flatB,42.5,20,51,27,y1-0.27,false,0,rgb('#1d2026'));for(let z=21.2;z<26;z+=2.6)for(let x=44;x<50;x+=3)hquad(flatB,x,z,x+1.1,z+1.1,y1-0.29,false,0,[3,3,3]);
+    /* 화장실 앞 음수대 */
+    box(flatB,50.55,y0,14.55,51.45,y0+1.15,15.0,'#c9ccd1');box(flatB,50.6,y0+0.55,15.0,51.4,y0+1.0,15.02,'#8ed08a');}
   doorsByFloor.push(doors);
   const atlas=ctex(2048,2048,(c)=>{names.forEach((o,sl)=>{const x=(sl%8)*256,y=Math.floor(sl/8)*96;
     if(o.k==='wc'&&/화장실/.test(o.n)){const fem=o.n.includes('여'),col=fem?'#d9418f':'#1f5fc4',cx=x+(o.acc?92:128);
@@ -454,7 +482,7 @@ function buildFloor(f){
     do{c.font='700 '+fs+'px '+DFONT;fs-=3;}while(c.measureText(o.n).width>228&&fs>14);
     c.fillText(o.n,x+128,y+44);});});
   const G=new THREE.Group();
-  G.add(wallB.mesh(MAT.wall),winB.mesh(MAT.winIn),doorB.mesh(MAT.door),signB.mesh(new THREE.MeshBasicMaterial({map:atlas})));
+  if(f===1)G.add(brB.mesh(MAT.brick),audB.mesh(MAT.aud));G.add(wallB.mesh(MAT.wall),winB.mesh(MAT.winIn),doorB.mesh(MAT.door),signB.mesh(new THREE.MeshBasicMaterial({map:atlas})));
   if(f===0){const col=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,FH-0.25,20),new THREE.MeshBasicMaterial({color:0xf0d568}));col.position.set(41.75,(FH-0.25)/2,57.5);G.add(col);const c2=col.clone();c2.position.z=65.25;G.add(c2);}
   if(f===1){const col=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,FH-0.25,20),new THREE.MeshBasicMaterial({color:0xa9cf5f}));col.position.set(44.25,y0+(FH-0.25)/2,64.75);G.add(col);}
   G.visible=false;scene.add(G);interior.push(G);
